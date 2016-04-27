@@ -1,23 +1,25 @@
 import java.util.Map;
 
 class ShortestSubsegmentFinder<Type> {
-	// variables storing the data
 	Type []content;
-	// key:   item value
-	// value: counter of how many times an item appeared in
-	//        the current subsegment that is being probed
+	/**
+	 * itemsToMatch - contains the items to be matching in the subsegment and their counter
+	 * key:   item value
+	 * value: counter of how many times an item appears in the current working subsegment
+	 */
 	Map<Type, Integer> itemsToMatch;
 	
-	// variables used for finding the shortest subsegment
-	int currIndex;
+	// shared state variables used for finding the shortest subsegment
 	int numContent;
 	int numItemsToMatch;
 	int bestStartIndex;
 	int bestEndIndex;
 	int bestLength;
-	int numItemsEncountered;
-	int currStart;
+	int currIteratingIndex;
+	int currStartIndex;
 	Type startItem;
+	int numDiffItemsEnc;
+	int timesEncoutered;
 	
 	ShortestSubsegmentFinder(Type []content, Map<Type, Integer> itemsToMatch) {
 		this.content      = content;
@@ -30,74 +32,115 @@ class ShortestSubsegmentFinder<Type> {
 	}
 	
 	private void findShortestSubsegment() {
-		numContent          = content.length;
-		numItemsToMatch     = itemsToMatch.size();
-		bestStartIndex      = 0;
-		bestEndIndex        = numContent - 1;
-		bestLength          = bestEndIndex - bestStartIndex;
-		numItemsEncountered = 0;
-		currStart           = 0;
-		startItem           = null;
-		
-		// loop until the first matching item is found
-		currIndex = 0;
-		for (; currIndex<numContent; currIndex++) {
-			Type currItem = content[currIndex];
+		initializeVariables();
+		findFirstMatchingItem();
+		findFirstCompleteSubsegment();
+		findOtherSubsegmetns();
+	}
+	
+	private void findFirstCompleteSubsegment() {
+		for (; currIteratingIndex<numContent; currIteratingIndex++) {
+			Type currItem      = content[currIteratingIndex];
+			timesEncoutered    = (itemsToMatch.get(currItem)==null)
+					 ? -1 : itemsToMatch.get(currItem);
+			
+			boolean matchedItem      = itemsToMatch.containsKey(currItem);
+			boolean foundBetterStart = currItem.equals(startItem);
+			
+			if (matchedItem && !foundBetterStart) {
+				itemsToMatch.put(currItem, timesEncoutered+1);
+				
+				boolean firstEncounter   = (timesEncoutered == 0);
+				if (firstEncounter) {
+					numDiffItemsEnc += 1;
+				
+					boolean foundAllItems = (numDiffItemsEnc == numItemsToMatch);
+					if (foundAllItems) { 
+						chooseBestSubsegment();
+						currIteratingIndex++;
+						break;
+					}
+				}
+			}
+			
+			else if (matchedItem && foundBetterStart)
+				shortenSubsegment();
+		}
+	}
+	
+	private void initializeVariables() {
+		numContent         = content.length;
+		numItemsToMatch    = itemsToMatch.size();
+		bestStartIndex     = 0;
+		bestEndIndex       = numContent - 1;
+		bestLength         = bestEndIndex - bestStartIndex;
+		numDiffItemsEnc    = 0;
+		currStartIndex     = 0;
+		startItem          = null;
+		currIteratingIndex = 0;
+	}
+	
+	private void findFirstMatchingItem() {
+		for (; currIteratingIndex<numContent; currIteratingIndex++) {
+			Type currItem = content[currIteratingIndex];
 			if (itemsToMatch.containsKey(currItem)) {
 				itemsToMatch.put(currItem, 1);
 				startItem           = currItem;
-				currStart           = currIndex;
-				bestStartIndex      = currStart;
-				numItemsEncountered += 1;
-				currIndex++;
+				currStartIndex      = currIteratingIndex;
+				bestStartIndex      = currStartIndex;
+				numDiffItemsEnc += 1;
+				currIteratingIndex++;
 				break;
 			}
 		}
+	}
+	
+	private void chooseBestSubsegment() {
+		int newLength = currIteratingIndex - (currStartIndex+1);
+		if (newLength < bestLength) {
+			bestLength       = newLength;
+			bestStartIndex   = currStartIndex;
+			bestEndIndex     = currIteratingIndex;
+		}
+	}
+	
+	private boolean foundShortestPossibleSubsegment() {
+		return (bestLength == numItemsToMatch);
+	}
+	
+	private void findOtherSubsegmetns() {
+		if (foundShortestPossibleSubsegment()) return;
 		
-		for (; currIndex<numContent; currIndex++) {
-			Type currItem          = content[currIndex];
-			int timesEncoutered    = (itemsToMatch.get(currItem)==null)
-					 ? 0 : itemsToMatch.get(currItem);
+		for (; currIteratingIndex<numContent; currIteratingIndex++) {
+			Type currItem          = content[currIteratingIndex];
+			timesEncoutered        = (itemsToMatch.get(currItem)==null)
+					 ? -1 : itemsToMatch.get(currItem);
 			
-			boolean matchedItem    = itemsToMatch.containsKey(currItem);
-			boolean firstEncounter = (timesEncoutered == 0);
+			boolean matchedItem      = itemsToMatch.containsKey(currItem);
 			boolean foundBetterStart = currItem.equals(startItem);
 			
-			if (matchedItem && firstEncounter) {
-				itemsToMatch.put(currItem, 1);
-				numItemsEncountered += 1;
-			}
-			
-			else if (matchedItem && !firstEncounter && !foundBetterStart)
+
+			if (matchedItem && !foundBetterStart)
 				itemsToMatch.put(currItem, timesEncoutered+1);
 			
-			else if (matchedItem && !firstEncounter && foundBetterStart)
+			else if (matchedItem && foundBetterStart) {
 				shortenSubsegment();
-			
-			boolean foundAllItems = (numItemsEncountered == numItemsToMatch); 
-			if (matchedItem && foundAllItems) {
-				int newLength = currIndex - (currStart+1);
-				if (newLength < bestLength) {
-					bestLength       = newLength;
-					bestStartIndex   = currStart;
-					bestEndIndex     = currIndex;
-				}
+				chooseBestSubsegment();
 				
-				// stop if found shortest possible subsegment
-				if (newLength == numItemsToMatch) break;
+				if (foundShortestPossibleSubsegment()) break;
 			}
 		}
 	}
 	
 	private void shortenSubsegment() {
-		int newIndex = currStart + 1;
-		for (; newIndex<currIndex; newIndex++) {
+		int newIndex = currStartIndex + 1;
+		for (; newIndex<currIteratingIndex; newIndex++) {
 			Type currItem       = content[newIndex];
-			currStart           = newIndex;
+			currStartIndex      = newIndex;
 			startItem           = currItem;
 			boolean matchedItem = itemsToMatch.containsKey(currItem);
 			int numEncItem      = (itemsToMatch.get(currItem)==null)
-					? 0 : itemsToMatch.get(currItem);
+					? -1 : itemsToMatch.get(currItem);
 				
 			if (matchedItem && numEncItem>1)
 				itemsToMatch.put(currItem, numEncItem-1);
@@ -112,16 +155,17 @@ class ShortestSubsegmentFinder<Type> {
 	 * Otherwise it prints the smallest subsegment from the content
 	 */
 	public void printShortestSubsegment() {
-		if (numItemsEncountered < numItemsToMatch) {
+		if (numDiffItemsEnc < numItemsToMatch) {
 			System.out.print("NO SUBSEGMENT FOUND");
 			return;
 		}
 		
 		StringBuilder sb = new StringBuilder();
-		for (; bestStartIndex<bestEndIndex; bestStartIndex++) {
-			sb.append(content[bestStartIndex] + " ");
+		int i = bestStartIndex;
+		for (; i<bestEndIndex; i++) {
+			sb.append(content[i] + " ");
 		}
-		sb.append(content[bestStartIndex] + " ");
+		sb.append(content[i] + " ");
 		System.out.print(sb);
 	}
 }
