@@ -21,6 +21,10 @@ class ShortestSubsegmentFinder<Type> {
 		findShortestSubsegment();
 	}
 	
+	public void setContent(Type []content) {
+		this.content = content;
+	}
+	
 	private void findShortestSubsegment() {
 		numOfContent        = content.length;
 		numOfItems          = itemsToMatch.size();
@@ -74,6 +78,7 @@ class ShortestSubsegmentFinder<Type> {
 					bestEndIndex     = currIndex;
 				}
 				
+				// stop if found shortest possible subsegment
 				if (newLength == numOfItems) break;
 			}
 		}
@@ -97,7 +102,7 @@ class ShortestSubsegmentFinder<Type> {
 		}
 	}
 	
-	public void printShortestSubsegment(String arr[]) {
+	public void printShortestSubsegment() {
 		if (numItemsEncountered < numOfItems) {
 			System.out.print("NO SUBSEGMENT FOUND");
 			return;
@@ -105,9 +110,9 @@ class ShortestSubsegmentFinder<Type> {
 		
 		StringBuilder sb = new StringBuilder();
 		for (; bestStartIndex<bestEndIndex; bestStartIndex++) {
-			sb.append(arr[bestStartIndex] + " ");
+			sb.append(content[bestStartIndex] + " ");
 		}
-		sb.append(arr[bestStartIndex] + " ");
+		sb.append(content[bestStartIndex] + " ");
 		System.out.print(sb);
 	}
 }

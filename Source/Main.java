@@ -3,6 +3,7 @@ public class Main {
 		Data data = new Data();
 		ShortestSubsegmentFinder<String> ssf =
 				new ShortestSubsegmentFinder<>(data.lowerCaseWords, data.wordsToMatch);
-		ssf.printShortestSubsegment(data.originalWords);
+		ssf.setContent(data.originalWords);
+		ssf.printShortestSubsegment();
 	}
 }
