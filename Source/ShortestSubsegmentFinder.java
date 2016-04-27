@@ -98,6 +98,11 @@ class ShortestSubsegmentFinder<Type> {
 	}
 	
 	public void printShortestSubsegment(String arr[]) {
+		if (numItemsEncountered < numOfItems) {
+			System.out.print("NO SUBSEGMENT FOUND");
+			return;
+		}
+		
 		StringBuilder sb = new StringBuilder();
 		for (; bestStartIndex<bestEndIndex; bestStartIndex++) {
 			sb.append(arr[bestStartIndex] + " ");
