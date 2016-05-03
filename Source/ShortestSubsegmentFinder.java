@@ -34,37 +34,34 @@ class ShortestSubsegmentFinder<Type> {
 	private void findShortestSubsegment() {
 		initializeVariables();
 		findFirstMatchingItem();
-		findFirstCompleteSubsegment();
-		findOtherSubsegmetns();
-	}
-	
-	private void findFirstCompleteSubsegment() {
+		
 		for (; currIteratingIndex<numContent; currIteratingIndex++) {
-			Type currItem      = content[currIteratingIndex];
-			timesEncoutered    = (itemsToMatch.get(currItem)==null)
+			Type currItem          = content[currIteratingIndex];
+			int timesEncoutered    = (itemsToMatch.get(currItem)==null)
 					 ? -1 : itemsToMatch.get(currItem);
 			
 			boolean matchedItem      = itemsToMatch.containsKey(currItem);
+			boolean firstEncounter   = (timesEncoutered == 0);
 			boolean foundBetterStart = currItem.equals(startItem);
 			
-			if (matchedItem && !foundBetterStart) {
-				itemsToMatch.put(currItem, timesEncoutered+1);
-				
-				boolean firstEncounter   = (timesEncoutered == 0);
-				if (firstEncounter) {
-					numDiffItemsEnc += 1;
-				
-					boolean foundAllItems = (numDiffItemsEnc == numItemsToMatch);
-					if (foundAllItems) { 
-						chooseBestSubsegment();
-						currIteratingIndex++;
-						break;
-					}
-				}
+			if (matchedItem && firstEncounter) {
+				itemsToMatch.put(currItem, 1);
+				numDiffItemsEnc += 1;
 			}
 			
-			else if (matchedItem && foundBetterStart)
+			else if (matchedItem && !firstEncounter && !foundBetterStart)
+				itemsToMatch.put(currItem, timesEncoutered+1);
+			
+			else if (matchedItem && !firstEncounter && foundBetterStart)
 				shortenSubsegment();
+			
+			boolean foundAllItems = (numDiffItemsEnc== numItemsToMatch); 
+			if (matchedItem && foundAllItems) {
+				chooseBestSubsegment();
+				
+				// stop if found shortest possible subsegment
+				if (bestLength == numItemsToMatch) break;
+			}
 		}
 	}
 	
@@ -101,34 +98,6 @@ class ShortestSubsegmentFinder<Type> {
 			bestLength       = newLength;
 			bestStartIndex   = currStartIndex;
 			bestEndIndex     = currIteratingIndex;
-		}
-	}
-	
-	private boolean foundShortestPossibleSubsegment() {
-		return (bestLength == numItemsToMatch);
-	}
-	
-	private void findOtherSubsegmetns() {
-		if (foundShortestPossibleSubsegment()) return;
-		
-		for (; currIteratingIndex<numContent; currIteratingIndex++) {
-			Type currItem          = content[currIteratingIndex];
-			timesEncoutered        = (itemsToMatch.get(currItem)==null)
-					 ? -1 : itemsToMatch.get(currItem);
-			
-			boolean matchedItem      = itemsToMatch.containsKey(currItem);
-			boolean foundBetterStart = currItem.equals(startItem);
-			
-
-			if (matchedItem && !foundBetterStart)
-				itemsToMatch.put(currItem, timesEncoutered+1);
-			
-			else if (matchedItem && foundBetterStart) {
-				shortenSubsegment();
-				chooseBestSubsegment();
-				
-				if (foundShortestPossibleSubsegment()) break;
-			}
 		}
 	}
 	
